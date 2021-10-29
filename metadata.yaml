@@ -1,5 +1,5 @@
 homepage: ​"https://lefty.io"​
 documentation: "https://help.lefty.io"
 versions:
-  - sha: c63e8abcd41dc62ffbdddbe2a08a312cebf93c26
+  - sha: 588afd7974c85bf663cdb58bf766e4f921f9f8c4
     changeNotes: Initial release.
