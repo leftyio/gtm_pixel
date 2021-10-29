@@ -36,7 +36,7 @@ ___SANDBOXED_JS_FOR_WEB_TEMPLATE___
 // Enter your template code here.
 const log = require('logToConsole');
 const sendPixel = require('sendPixel');
-const encodeUriComponent = require('encodeUriComponent');
+const encodeUri = require('encodeUri');
 const copyFromDataLayer = require('copyFromDataLayer');
 const getReferrerUrl = require('getReferrerUrl');
 const queryPermission = require('queryPermission');
@@ -46,28 +46,55 @@ if (queryPermission('read_data_layer', conversionKey)) {
   log('read_data_layer permission OK!');
   const leftyConversion = copyFromDataLayer(conversionKey);
   const products = leftyConversion.products;
+  
+  if (!products || products.length === 0) {
+     log("Products list not found");
+     data.gtmOnFailure();
+     return;
+  }
+ 
+  if (!leftyConversion.orderId) {
+     log("Order ID not found");
+     data.gtmOnFailure();
+     return;
+  }
+  
+  if (!leftyConversion.amount) {
+     log("Order amount not found");
+     data.gtmOnFailure();
+     return;
+  }
+  
+  if (!leftyConversion.currency) {
+     log("Order currency not found");
+     data.gtmOnFailure();
+     return;
+  }
+ 
 
   /// could be GTM javascript variable
   const pIds = products.map((item) => 'pId=' + item.id).join('&');  
-  const pNames = products.map((item) =>'pName=' + encodeUriComponent(item.name)).join('&'); 
+  const pNames = products.map((item) =>'pName=' + item.name).join('&'); 
   const itemQty = products.map((item) => 'itemQty=' + item.quantity).join('&');  
   const itemAmount = products.map((item) => 'itemAmount=' + item.price).join('&');
-
-  let url = 'https://a.lefty.io/track?type=conversion';
-  url += '&orderId=' + leftyConversion.orderId;
-  url += '&amount=' + leftyConversion.amount;
-  url += '&currency=' + leftyConversion.currency;
-  url += '&' + pIds;
-  url += '&' + pNames;
-  url += '&' + itemQty;
-  url += '&' + itemAmount; 
   
-  url += '&ref=' + getReferrerUrl();
+  let uri = 'type=conversion';
+  uri += '&orderId=' + leftyConversion.orderId;
+  uri += '&amount=' + leftyConversion.amount;
+  uri += '&currency=' + leftyConversion.currency;
+  uri += '&' + pIds;
+  uri += '&' + pNames;
+  uri += '&' + itemQty;
+  uri += '&' + itemAmount; 
+  
+  uri += '&ref=' + getReferrerUrl();
+  
+  let url = 'https://a.lefty.io/track?' + encodeUri(uri);
 
   sendPixel(url, data.gtmOnSuccess, data.gtmOnFailure);
 } else {
    log('read_data_layer permission KO!');
-  data.gtmOnFailure();
+   data.gtmOnFailure();
 }
 
 
@@ -177,6 +204,9 @@ ___WEB_PERMISSIONS___
         }
       ]
     },
+    "clientAnnotations": {
+      "isEditedByUser": true
+    },
     "isRequired": true
   }
 ]
@@ -184,12 +214,119 @@ ___WEB_PERMISSIONS___
 
 ___TESTS___
 
-scenarios: []
-setup: ''
+scenarios:
+- name: Trigger send pixel for 1 product
+  code: |-
+    mock("copyFromDataLayer", {
+      products: [
+        {
+          id: '1',
+          name: 'Test 1',
+          quantity: 1,
+          price: 12
+        }
+      ],
+      orderId: 1,
+      currency: 'USD',
+      amount: 12
+    });
+
+    mock('sendPixel', function(url, onSuccess, onFailure) {
+        assertThat(url).isEqualTo("https://a.lefty.io/track?type=conversion&orderId=1&amount=12&currency=USD&pId=1&pName=Test%201&itemQty=1&itemAmount=12&ref=https://test.com");
+        onSuccess();
+    });
+
+    runCode({});
+
+    assertApi('sendPixel').wasCalled();
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Trigger send pixel for multiple products
+  code: "mock(\"copyFromDataLayer\", {\n  products: [\n    {\n      id: '1',\n   \
+    \   name: 'Test 1',\n      quantity: 1,\n      price: 10\n    },\n    {\n    \
+    \  id: '2',\n      name: 'Test 2',\n      quantity: 2,\n      price: 30\n    },\n\
+    \    {\n      id: '3',\n      name: 'Test 3',\n      quantity: 1,\n      price:\
+    \ 5\n    }\n  ],\n  orderId: 1,\n  currency: 'USD',\n  amount: 45\n});\n\nmock('sendPixel',\
+    \ function(url, onSuccess, onFailure) {\n    assertThat(url).isEqualTo(\"https://a.lefty.io/track?type=conversion&orderId=1&amount=45&currency=USD&pId=1&pId=2&pId=3&pName=Test%201&pName=Test%202&pName=Test%203&itemQty=1&itemQty=2&itemQty=1&itemAmount=10&itemAmount=30&itemAmount=5&ref=https://test.com\"\
+    );\n  \n  onSuccess();\n});\n\nrunCode({});\n\nassertApi('sendPixel').wasCalled();\n\
+    assertApi('gtmOnSuccess').wasCalled();"
+- name: Products list not found cause failure
+  code: |-
+    mock("copyFromDataLayer", {
+      products: []
+    });
+
+    runCode({});
+
+
+    assertApi('gtmOnFailure').wasCalled();
+- name: Products list empty cause failure
+  code: |-
+    mock("copyFromDataLayer", {});
+
+    runCode({});
+
+    assertApi('gtmOnFailure').wasCalled();
+- name: Order ID not found
+  code: |-
+    mock("copyFromDataLayer", {
+      products: [
+        {
+          id: '1',
+          name: 'Test 1',
+          quantity: 1,
+          price: 12
+        }
+      ],
+      currency: 'USD',
+      amount: 12
+    });
+
+
+    runCode({});
+
+    assertApi('gtmOnFailure').wasCalled();
+- name: Order currency not found
+  code: |-
+    mock("copyFromDataLayer", {
+      products: [
+        {
+          id: '1',
+          name: 'Test 1',
+          quantity: 1,
+          price: 12
+        }
+      ],
+      orderId: '1',
+      amount: 12
+    });
+
+
+    runCode({});
+
+    assertApi('gtmOnFailure').wasCalled();
+- name: Order amount not found
+  code: |-
+    mock("copyFromDataLayer", {
+      products: [
+        {
+          id: '1',
+          name: 'Test 1',
+          quantity: 1,
+          price: 12
+        }
+      ],
+      orderId: '1',
+      currency: 'USD',
+    });
+
+
+    runCode({});
+
+    assertApi('gtmOnFailure').wasCalled();
+setup: mock('getReferrerUrl', "https://test.com");
 
 
 ___NOTES___
 
-Created on 10/4/2021, 11:53:04 AM
-
+Created on 10/29/2021, 10:39:42 AM
 
