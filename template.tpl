@@ -1,11 +1,23 @@
-﻿﻿___INFO___
+﻿﻿___TERMS_OF_SERVICE___
+
+By creating or modifying this file you agree to Google Tag Manager's Community
+Template Gallery Developer Terms of Service available at
+https://developers.google.com/tag-manager/gallery-tos (or such other URL as
+Google may provide), as modified from time to time.
+
+
+___INFO___
 
 {
   "type": "TAG",
   "id": "cvt_temp_public_id",
   "version": 1,
   "securityGroups": [],
-  "displayName": "Copy of Lefty Conversion Pixel",
+  "displayName": "Lefty Conversion Pixel",
+  "categories": [
+    "AFFILIATE_MARKETING",
+    "CONVERSIONS"
+  ],
   "brand": {
     "id": "brand_dummy",
     "displayName": "Lefty",
