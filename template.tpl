@@ -1,19 +1,11 @@
-﻿﻿___TERMS_OF_SERVICE___
-
-By creating or modifying this file you agree to Google Tag Manager's Community
-Template Gallery Developer Terms of Service available at
-https://developers.google.com/tag-manager/gallery-tos (or such other URL as
-Google may provide), as modified from time to time.
-
-
-___INFO___
+﻿﻿___INFO___
 
 {
   "type": "TAG",
   "id": "cvt_temp_public_id",
   "version": 1,
   "securityGroups": [],
-  "displayName": "Lefty Conversion Pixel",
+  "displayName": "Copy of Lefty Conversion Pixel",
   "brand": {
     "id": "brand_dummy",
     "displayName": "Lefty",
@@ -44,7 +36,7 @@ const queryPermission = require('queryPermission');
 const conversionKey = 'lefty.conversion';
 if (queryPermission('read_data_layer', conversionKey)) {
   log('read_data_layer permission OK!');
-  const leftyConversion = copyFromDataLayer(conversionKey);
+  const leftyConversion = copyFromDataLayer(conversionKey) || {};
   const products = leftyConversion.products;
   
   if (!products || products.length === 0) {
