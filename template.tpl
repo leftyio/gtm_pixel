@@ -91,7 +91,7 @@ if (queryPermission('read_data_layer', conversionKey)) {
   uri += '&' + itemQty;
   uri += '&' + itemAmount; 
   
-  uri += '&ref=' + getReferrerUrl();
+  uri += '&ref=' + getReferrerUrl('host');
   
   let url = 'https://a.lefty.io/track?' + encodeUri(uri);
 
