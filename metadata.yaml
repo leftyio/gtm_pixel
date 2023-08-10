@@ -1,5 +1,9 @@
 homepage: ​"https://lefty.io"​
 documentation: "https://help.lefty.io"
 versions:
+  # Latest version
+  - sha: fbaed303b92c7508d5309c84163ee278e7284d9b
+    changeNotes: Fix Referrer URL
+   # Older versions
   - sha: 2a5f85691b15ca4a894caf5b068b1213b0770aaa
     changeNotes: Initial release.
