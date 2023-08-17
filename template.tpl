@@ -1,4 +1,4 @@
-﻿﻿___TERMS_OF_SERVICE___
+﻿﻿﻿___TERMS_OF_SERVICE___
 
 By creating or modifying this file you agree to Google Tag Manager's Community
 Template Gallery Developer Terms of Service available at
@@ -49,13 +49,7 @@ const conversionKey = 'lefty.conversion';
 if (queryPermission('read_data_layer', conversionKey)) {
   log('read_data_layer permission OK!');
   const leftyConversion = copyFromDataLayer(conversionKey) || {};
-  const products = leftyConversion.products;
-  
-  if (!products || products.length === 0) {
-     log("Products list not found");
-     data.gtmOnFailure();
-     return;
-  }
+  const products = leftyConversion.products || [];
  
   if (!leftyConversion.orderId) {
      log("Order ID not found");
@@ -74,24 +68,24 @@ if (queryPermission('read_data_layer', conversionKey)) {
      data.gtmOnFailure();
      return;
   }
- 
-
-  /// could be GTM javascript variable
-  const pIds = products.map((item) => 'pId=' + item.id).join('&');  
-  const pNames = products.map((item) =>'pName=' + item.name).join('&'); 
-  const itemQty = products.map((item) => 'itemQty=' + item.quantity).join('&');  
-  const itemAmount = products.map((item) => 'itemAmount=' + item.amount).join('&');
   
   let uri = 'type=conversion';
   uri += '&orderId=' + leftyConversion.orderId;
   uri += '&amount=' + leftyConversion.amount;
   uri += '&currency=' + leftyConversion.currencyCode;
-  uri += '&' + pIds;
-  uri += '&' + pNames;
-  uri += '&' + itemQty;
-  uri += '&' + itemAmount; 
-  
   uri += '&ref=' + getReferrerUrl('host');
+
+  if (products.length !== 0) {
+    const pIds = products.map((item) => 'pId=' + item.id).join('&');  
+    const pNames = products.map((item) =>'pName=' + item.name).join('&'); 
+    const itemQty = products.map((item) => 'itemQty=' + item.quantity).join('&');  
+    const itemAmount = products.map((item) => 'itemAmount=' + item.amount).join('&');
+
+    uri += '&' + pIds;
+    uri += '&' + pNames;
+    uri += '&' + itemQty;
+    uri += '&' + itemAmount; 
+  }
   
   let url = 'https://a.lefty.io/track?' + encodeUri(uri);
 
@@ -236,7 +230,7 @@ scenarios:
     });
 
     mock('sendPixel', function(url, onSuccess, onFailure) {
-        assertThat(url).isEqualTo("https://a.lefty.io/track?type=conversion&orderId=1&amount=12&currency=USD&pId=1&pName=Test%201&itemQty=1&itemAmount=12&ref=https://test.com");
+        assertThat(url).isEqualTo("https://a.lefty.io/track?type=conversion&orderId=1&amount=12&currency=USD&ref=https://test.com&pId=1&pName=Test%201&itemQty=1&itemAmount=12");
         onSuccess();
     });
 
@@ -251,26 +245,26 @@ scenarios:
     \  },\n    {\n      id: '3',\n      name: 'Test 3',\n      quantity: 1,\n    \
     \  amount: 5\n    }\n  ],\n  orderId: 1,\n  currencyCode: 'USD',\n  amount: 45\n\
     });\n\nmock('sendPixel', function(url, onSuccess, onFailure) {\n    assertThat(url).isEqualTo(\"\
-    https://a.lefty.io/track?type=conversion&orderId=1&amount=45&currency=USD&pId=1&pId=2&pId=3&pName=Test%201&pName=Test%202&pName=Test%203&itemQty=1&itemQty=2&itemQty=1&itemAmount=10&itemAmount=30&itemAmount=5&ref=https://test.com\"\
+    https://a.lefty.io/track?type=conversion&orderId=1&amount=45&currency=USD&ref=https://test.com&pId=1&pId=2&pId=3&pName=Test%201&pName=Test%202&pName=Test%203&itemQty=1&itemQty=2&itemQty=1&itemAmount=10&itemAmount=30&itemAmount=5\"\
     );\n  \n  onSuccess();\n});\n\nrunCode({});\n\nassertApi('sendPixel').wasCalled();\n\
     assertApi('gtmOnSuccess').wasCalled();"
-- name: Products list not found cause failure
+- name: Products list is optional
   code: |-
     mock("copyFromDataLayer", {
-      products: []
+      orderId: 1,
+      currencyCode: 'USD',
+      amount: 12
+    });
+
+    mock('sendPixel', function(url, onSuccess, onFailure) {
+        assertThat(url).isEqualTo("https://a.lefty.io/track?type=conversion&orderId=1&amount=12&currency=USD&ref=https://test.com");
+        onSuccess();
     });
 
     runCode({});
 
-
-    assertApi('gtmOnFailure').wasCalled();
-- name: Products list empty cause failure
-  code: |-
-    mock("copyFromDataLayer", {});
-
-    runCode({});
-
-    assertApi('gtmOnFailure').wasCalled();
+    assertApi('sendPixel').wasCalled();
+    assertApi('gtmOnSuccess').wasCalled();
 - name: Order ID not found
   code: |-
     mock("copyFromDataLayer", {
